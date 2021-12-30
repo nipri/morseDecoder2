@@ -29,6 +29,8 @@ static double timeUnit = 240; // 5 WPM
 
 unsigned int charArray[8], elementIndex;
 unsigned int gpioValue;
+char buffer[64];
+
 
 FILE *fp;
 
@@ -130,23 +132,26 @@ void getTimeInterval(void)
 unsigned int readGPIO(unsigned int whichOne)
 {
 
-//    char buffer[8];
-    unsigned int value;
+//    	char buffer[64];
+    	unsigned int value;
 
-    fp = fopen("/sys/class/gpio/gpio17/value", "r");
+	sprintf(buffer, "/sys/class/gpio/gpio%d/value", whichOne);
 
-    if (fp == NULL)
-    {
-        perror("GPIO ERROR");
-        printf("Can't read GPIO %d\r\n", whichOne);
-        return(-1);
-    }
-    else
-    {
-        fscanf(fp, "%u", &value);
-        fclose(fp);
-        return value;
-    }
+//    	fp = fopen("/sys/class/gpio/gpio17/value", "r");
+	fp = fopen(buffer, "r");
+
+    	if (fp == NULL)
+    	{
+        	perror("GPIO ERROR");
+        	printf("Can't read GPIO %d\r\n", whichOne);
+        	return(-1);
+    	}
+    	else
+    	{
+        	fscanf(fp, "%u", &value);
+        	fclose(fp);
+        	return value;
+    	}
 }
 
 void lookUpChar(void)
@@ -193,11 +198,16 @@ int main(int argc, char *argv[])
 	std::cout << "Hello..." << std::endl;
 
 	// Set up the input GPIO
-        fp = fopen("/sys/class/gpio/export", "w");
-        fprintf(fp, "17");
+	sprintf(buffer, "/sys/class/gpio/export");
+//        fp = fopen("/sys/class/gpio/export", "w");
+	fp = fopen(buffer, "w");
+//        fprintf(fp, "17");
+	fprintf(fp, "%d", GPIO);
         fclose(fp);
 
-        fp = fopen("/sys/class/gpio/gpio17/direction", "w");
+	sprintf(buffer, "/sys/class/gpio/gpio%d/direction", GPIO);
+//        fp = fopen("/sys/class/gpio/gpio17/direction", "w");
+	fp = fopen(buffer, "w");
         fprintf(fp, "in");
         fclose(fp);
 
@@ -217,6 +227,49 @@ int main(int argc, char *argv[])
 
 	newSpeedFactor = wpm / atoi(argv[1]);
 	timeUnit *= newSpeedFactor;
+
+	if (readGPIO(GPIO) == 1)
+	{
+		printf("Waiting for GPIO to go LOW before proceeding\r\n");
+
+		do
+		{
+			printf("|\r");
+			fflush(stdout);
+			usleep(500000);
+			printf("/\r");
+                        fflush(stdout);
+			usleep(500000);
+			printf("-\r");
+                        fflush(stdout);
+
+			usleep(500000);
+			printf("\\");
+			printf("\r");
+                        fflush(stdout);
+
+			usleep(500000);
+			printf("|\r");
+
+                        fflush(stdout);
+			usleep(500000);
+			printf("/\r");
+                        fflush(stdout);
+
+			usleep(500000);
+			printf("-\r");
+                        fflush(stdout);
+
+			usleep(500000);
+			printf("\\");
+			printf("\r");
+                        fflush(stdout);
+
+			usleep(500000);
+
+		} while (readGPIO(GPIO) == 1);
+	}	
+
 
 	while(!done)
 	{
