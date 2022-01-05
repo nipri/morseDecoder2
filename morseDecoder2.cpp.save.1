@@ -1,0 +1,418 @@
+
+
+#include <iostream>
+#include <fstream>
+#include <string.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <stdbool.h>
+#include <errno.h>
+
+#include "morseCodeDecoder.h"
+
+#define INTERVAL	1 // mS interval to execute timerProc()
+#define GPIO		17
+
+struct timespec timer;
+bool gotChar, rxChar, done, init, gotWord, calibrate, firstMark, secondMark, firstSpace, secondSpace;
+bool thirdMark, fourthMark, thirdSpace, fourthSpace;
+long long int highTime, lowTime, currentTime;
+unsigned long long int lastHandledTime;
+
+double wpm = 5;
+
+static double timeUnit = 240; // 5 WPM
+
+
+unsigned int charArray[8], elementIndex;
+unsigned int gpioValue;
+char buffer[64];
+
+FILE *fp;
+
+void timerProc(void);
+void getTimeInterval(void);
+void lookUpChar(void);
+unsigned int readGPIO(unsigned int);
+
+void getSpeed(void);
+
+void getSpeed(void)
+{
+
+	static double highTimeArray[4], lowTimeArray[4];
+	static unsigned int highTime, lowTime;
+	static unsigned int minute = 60000;
+	static unsigned int paris = 50; // This is the number of time units in the word "paris "
+	unsigned int wpm;
+
+	fflush(stdout);
+
+	gpioValue =  readGPIO(GPIO);
+	
+	// Didn't receive anythng yet
+        if ( (gpioValue == 0) && !rxChar) 
+        {
+		lowTime++;
+		memset(highTimeArray, 0, sizeof(hightimeArray));
+		memset (highTimeArray, 0, sizeof(hightimeArray));
+		firstMark = false;
+		secondMark = false;
+		thirdMark = false;
+		fourthMark = false;
+		firstSpace = false;
+		secondSpace = false;
+		thirdSpace = false;
+		fourthSpace = fasle;
+
+                if (lowTime >= 1000)
+                {
+                        printf(".");
+                        fflush(stdout);
+			lowTime = 0;
+                }
+        }
+
+	// We're receiving a char and ar in-between DITS and DAHS
+	else if ( (gpioValue == 0) && rxChar)
+	{
+		lowTime++;
+
+                if (lowTime >= 1000)
+                {
+			rxChar = 0;
+//                      printf(".");
+                        fflush(stdout);
+                        lowTime = 0;
+                }
+
+	}
+
+	// We're receivig our first DIT or DAH
+        else if  ( (gpioValue == 1) && !firstMark && !firstSpace && \
+		    !secondMark && !secondSpace && !thirdMark && !thirdSpace && \
+		    !fourthMark && !fourthSpace ) )
+		
+        {
+                rxChar = true;
+                highTime++;
+        }
+
+
+	// Got our first DIT or DAH
+	else if ( (gpioValue == 0) && (highTime > 0) && !firstMark && !firstSpace && \
+                    !secondMark && !secondSpace && !thirdMark && !thirdSpace && \
+                    !fourthMark && !fourthSpace ) )
+	{
+		firstMark = true;
+		highTimeArray[0] = highTime;
+		highTime = 0;
+	}
+
+	// Getting our 2nd DIT or DAH
+	else if ( (gpioValue == 1) && firstMark && !firstSpace
+	{
+		highTime2++;
+	}
+
+	else if ( (gpioValue == 0) && (highTime2 > 0) && firstMark && !secondMark)
+	{
+		secondMark = true;
+
+		if (highTime1 == highTime2) // They're both dits or dahs
+		{
+			printf("1\r\n"); // Need this?
+			rxChar = false;
+	                lowTime = 0;
+        	        highTime1 = 0;
+                	highTime2 = 0;
+                	firstMark = false;
+                	secondMark = false;
+
+		}
+
+		else if ( (highTime1 /  highTime2) >= 3) // highTime2 is the dit which represents the timeUnit
+		{
+			timeUnit = highTime2;
+			calibrate = false;
+		}
+
+		else if( (highTime2 / highTime1) >= 3) // highTime1 is the dit that represents the time unit
+		{
+			timeUnit = highTime1;
+			calibrate = false;
+		}
+	}
+
+        else
+        {
+        }
+
+	if (!calibrate)
+	{
+
+		wpm = (minute / timeUnit) / paris;
+		printf("\r\nGot Speed: %d WPM!\r\n", wpm);
+	}
+}
+
+
+void timerProc(void)
+{
+
+	if (calibrate && init)
+	{
+		std::cout << "Getting Speed: Please send me a DIT and a DAH or a DAH and a DIT!" << std::endl;
+		init = false;
+	}
+
+	if (calibrate)
+	{
+		getSpeed();
+	}
+
+	else
+	{
+
+		gpioValue =  readGPIO(GPIO);
+
+		if (gpioValue == 1)
+		{
+			rxChar = true;
+			gotWord = true;
+			highTime++;
+			lowTime = 0;
+		}
+
+		else if (gpioValue == 0)
+		{
+			lowTime++;
+
+			if (lowTime >= timeUnit*7) // We havent received anything yet or  
+			{			   // may just be in-between words
+				lowTime = 0;
+
+				if (gotWord)
+				{
+					gotWord = false;
+					printf(" ");
+				}
+			}
+		}
+
+		else
+		{
+		}
+
+		if ( rxChar && (gpioValue == 0) && (highTime > 0)) // We have a dir or a dah
+		{
+
+			if (highTime < timeUnit*3)
+			{
+				charArray[elementIndex] = DIT;
+				elementIndex++;
+			}
+
+			else if ( (highTime >= timeUnit*3) && (highTime < timeUnit*4) )
+			{
+				charArray[elementIndex] = DAH;
+				elementIndex++;
+			}
+
+			else
+			{
+			}
+
+			highTime = 0;
+		}
+
+		if (rxChar && (gpioValue == 0) && (lowTime > timeUnit*4)) // We received a complete character
+		{
+
+			charArray[elementIndex] = END;
+			rxChar = false;
+			elementIndex = 0;
+			lowTime = 0;
+			highTime = 0;
+			lookUpChar();
+		}
+	} // end else
+}
+
+void getTimeInterval(void)
+{
+
+	clock_gettime(CLOCK_MONOTONIC, &timer);
+        currentTime = (timer.tv_sec * 1000) + (timer.tv_nsec / 1000000);
+
+	if ( (currentTime - lastHandledTime) >= INTERVAL) 
+	{
+		timerProc();
+	        clock_gettime(CLOCK_MONOTONIC, &timer);
+	        lastHandledTime = (timer.tv_sec * 1000) + (timer.tv_nsec / 1000000);
+	}
+}
+
+
+unsigned int readGPIO(unsigned int whichOne)
+{
+
+//    	char buffer[64];
+    	unsigned int value;
+
+	sprintf(buffer, "/sys/class/gpio/gpio%d/value", whichOne);
+
+//    	fp = fopen("/sys/class/gpio/gpio17/value", "r");
+	fp = fopen(buffer, "r");
+
+    	if (fp == NULL)
+    	{
+        	perror("GPIO ERROR");
+        	printf("Can't read GPIO %d\r\n", whichOne);
+        	return(-1);
+    	}
+    	else
+    	{
+        	fscanf(fp, "%u", &value);
+        	fclose(fp);
+        	return value;
+    	}
+}
+
+void lookUpChar(void)
+{
+	bool match, foundChar;
+        int i, j;
+        
+
+	i = 0;
+	match = 0;
+	foundChar = 0;
+
+        do
+        {
+        	j = 0;
+
+                do
+                {
+ 	               if (charArray[j] == morseCodeTable[i][j])
+       		                match = true;
+                       else
+                                match = false;
+
+		       if (match && (morseCodeTable[i][j] == END) && (charArray[j] == END) )
+				foundChar = true;
+
+                	j++;
+
+                } while (match && !foundChar);
+
+		i++;
+
+          } while (!foundChar);
+
+        printf("%c", morseCodeTable[i-1][j]);
+	fflush(stdout);
+}
+
+int main(int argc, char *argv[])
+{
+
+	double newSpeedFactor;
+
+	std::cout << "Hello..." << std::endl;
+
+	// Set up the input GPIO
+	sprintf(buffer, "/sys/class/gpio/export");
+//        fp = fopen("/sys/class/gpio/export", "w");
+	fp = fopen(buffer, "w");
+//        fprintf(fp, "17");
+	fprintf(fp, "%d", GPIO);
+        fclose(fp);
+
+	sprintf(buffer, "/sys/class/gpio/gpio%d/direction", GPIO);
+//        fp = fopen("/sys/class/gpio/gpio17/direction", "w");
+	fp = fopen(buffer, "w");
+        fprintf(fp, "in");
+        fclose(fp);
+
+	lowTime = 0;
+	highTime = 0;
+	elementIndex = 0;
+
+        //initialize timer 
+        clock_gettime(CLOCK_MONOTONIC, &timer);
+        lastHandledTime = (timer.tv_sec * 1000) + (timer.tv_nsec * 1000000);
+
+	usleep(1000);
+	memset(charArray, 0, sizeof(charArray));
+
+	init = true;
+	gotWord = false;
+	firstMark = false;
+	secondMark = false;
+	firstSpace = false;
+	secondSpace = false;
+	
+
+	newSpeedFactor = wpm / atoi(argv[1]);
+	timeUnit *= newSpeedFactor;
+
+	if (readGPIO(GPIO) == 1)
+	{
+		printf("Waiting for GPIO to go LOW before proceeding\r\n");
+
+		do // Do the clocky looking thing while waiting :)
+		{
+			printf("|\r");
+			fflush(stdout);
+			usleep(500000);
+			printf("/\r");
+                        fflush(stdout);
+			usleep(500000);
+			printf("-\r");
+                        fflush(stdout);
+
+			usleep(500000);
+			printf("\\");
+			printf("\r");
+                        fflush(stdout);
+
+			usleep(500000);
+			printf("|\r");
+
+                        fflush(stdout);
+			usleep(500000);
+			printf("/\r");
+                        fflush(stdout);
+
+			usleep(500000);
+			printf("-\r");
+                        fflush(stdout);
+
+			usleep(500000);
+			printf("\\");
+			printf("\r");
+                        fflush(stdout);
+
+			usleep(500000);
+
+		} while (readGPIO(GPIO) == 1);
+	}	
+	
+	calibrate = true;
+
+	while(!done)
+	{
+		getTimeInterval();
+		usleep(200);
+	}
+}
+
+
+
+
