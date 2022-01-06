@@ -261,10 +261,10 @@ void getSpeed(void)
 		aveLowTime /= (double)aveLowTimeCount;
 
 		timeUnit = aveLowTime;
-		printf("ave Low Time: %d	%d\r\n", aveLowTime, aveLowTimeCount);
+//		printf("ave Low Time: %d	%d\r\n", aveLowTime, aveLowTimeCount);
 
-		for (i=0; i<=6; i++)
-			printf("%.0f\r\n", lowTimeArray[i]);
+//		for (i=0; i<=6; i++)
+//			printf("%.0f\r\n", lowTimeArray[i]);
 
 		calibrate = false;
         }
@@ -503,7 +503,7 @@ int main(int argc, char *argv[])
 
 	if (readGPIO(GPIO) == 1)
 	{
-		printf("Waiting for GPIO to go LOW before proceeding\r\n");
+		printf("Waiting for GPIO to go LOW before proceeding...\r\n\r\n");
 
 		do // Do the clocky looking thing while waiting :)
 		{
@@ -522,23 +522,7 @@ int main(int argc, char *argv[])
                         fflush(stdout);
 
 			usleep(500000);
-			printf("|\r");
 
-                        fflush(stdout);
-			usleep(500000);
-			printf("/\r");
-                        fflush(stdout);
-
-			usleep(500000);
-			printf("-\r");
-                        fflush(stdout);
-
-			usleep(500000);
-			printf("\\");
-			printf("\r");
-                        fflush(stdout);
-
-			usleep(500000);
 
 		} while (readGPIO(GPIO) == 1);
 	}	
