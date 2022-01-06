@@ -1,5 +1,3 @@
-
-
 #include <iostream>
 #include <fstream>
 #include <string.h>
@@ -57,36 +55,33 @@ void getSpeed(void)
 	static unsigned int highTime, lowTime, aveLowTime, aveLowTimeCount, i;
 	static unsigned int minute = 60000;
 	static unsigned int paris = 50; // This is the number of time units in the word "paris "
-	static bool setLowTime = true;
 
 	fflush(stdout);
 
 	gpioValue =  readGPIO(GPIO);
 
-       // We're receiving a char and are in-between DITS and DAHS
+	if (gpioValue == 1)
+		highTime++;
+
+       // We're receiving a char and are in-between DITS and DAHS or between words
       if ( (gpioValue == 0) && rxChar)
       {
               lowTime++;
 
-/*              printf("2 ");
-                fflush(stdout);
-
-                // Timed out after 1 second
-                if (lowTime >= 1000) 
+                // Timed out after 3 seconds
+                if (lowTime >= 3000) 
                 {
                       rxChar = false;
                         printf(".");
                         fflush(stdout);
                         lowTime = 0;
-                } */
+                } 
       }
 
 	
 	// Didn't receive anythng yet
         if ( (gpioValue == 0) && !rxChar) 
         {
-//		printf("1 ");
-//		fflush(stdout);
 		lowTime++;
 		memset(highTimeArray, 0, sizeof(highTimeArray));
 		memset (highTimeArray, 0, sizeof(highTimeArray));
@@ -111,12 +106,7 @@ void getSpeed(void)
         else if  ( (gpioValue == 1) && !firstMark && !secondMark && !thirdMark && !fourthMark &&\
 		    !fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {
-
-//               printf("3 ");
-//                fflush(stdout);
-
                 rxChar = true;
-                highTime++;
 		lowTime = 0;
         }
 
@@ -124,9 +114,6 @@ void getSpeed(void)
 	else if ( (gpioValue == 0) && (highTime > 0) && !firstMark && !secondMark && !thirdMark && !fourthMark &&\
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
 	{
-  //             printf("4 ");
-  //              fflush(stdout);
-
 		firstMark = true;
 		highTimeArray[0] = highTime;
 		highTime = 0;
@@ -134,207 +121,120 @@ void getSpeed(void)
 
 
 	// Getting our 2nd DIT or DAH
-	else if ( (gpioValue == 1) && firstMark && !secondMark && !thirdMark && !fourthMark && \
+	else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && !secondMark && !thirdMark && !fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
 	{       
-//               printf("5 ");
-//                fflush(stdout);
-
-		if (setLowTime)
-		{
-			lowTimeArray[0] = lowTime;
-			setLowTime = false;
-		}
-
+		lowTimeArray[0] = lowTime;
 		lowTime = 0;
-		highTime++;
 	}
 
 	// Got our 2nd mark
 	else if ( (gpioValue == 0) && (highTime > 0) && firstMark && !secondMark && !thirdMark && !fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
 	{
-//               printf("6 ");
-//                fflush(stdout);
-
 		secondMark = true;
 		highTimeArray[1] = highTime;
 		highTime = 0;
-		setLowTime = true;
 	}
 
         // Getting our 3rd DIT or DAH
-        else if ( (gpioValue == 1) && firstMark && secondMark && !thirdMark && !fourthMark && \
+        else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && secondMark && !thirdMark && !fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {       
-//               printf("7 ");
-//                fflush(stdout);
-
-		if (setLowTime)
-		{
-	                lowTimeArray[1] = lowTime;
-			setLowTime = false;
-		}
-
+                lowTimeArray[1] = lowTime;
                 lowTime = 0;
-                highTime++;
         }
 
         // Got our 3nd mark
         else if ( (gpioValue == 0) && (highTime > 0) && firstMark && secondMark && !thirdMark && !fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {
- //              printf("8 ");
- //               fflush(stdout);
-
                 thirdMark = true;
                 highTimeArray[2] = highTime;
                 highTime = 0;
-		setLowTime = true;
         }
 
         // Getting our 4rd DIT or DAH
-        else if ( (gpioValue == 1) && firstMark && secondMark && thirdMark && !fourthMark && \
+        else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && secondMark && thirdMark && !fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {       
-//               printf("9 ");
-//                fflush(stdout);
-
-		if (setLowTime)
-		{
-                	lowTimeArray[2] = lowTime;
-			setLowTime = false;
-		}
-
+               	lowTimeArray[2] = lowTime;
                 lowTime = 0;
-                highTime++;
         }
 
        // Got our 4th mark
         else if ( (gpioValue == 0) && (highTime > 0) && firstMark && secondMark && thirdMark && !fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {
-//               printf("10 ");
-//                fflush(stdout);
-
                 fourthMark = true;
                 highTimeArray[3] = highTime;
                 highTime = 0;
-		setLowTime = true;
         }
 
         // Getting our 5th DIT or DAH
-        else if ( (gpioValue == 1) && firstMark && secondMark && thirdMark && fourthMark && \
+        else if ( (gpioValue == 1) && (lowTime > 0 ) && firstMark && secondMark && thirdMark && fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {       
-//               printf("11 ");
-//                fflush(stdout);
-
-		if (setLowTime)
-		{
-                	lowTimeArray[3] = lowTime;
-			setLowTime = false;
-		}
+               	lowTimeArray[3] = lowTime;
                 lowTime = 0;
-                highTime++;
         }
 
       // Got our 5th mark
         else if ( (gpioValue == 0) && (highTime > 0) && firstMark && secondMark && thirdMark && fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {
-//               printf("12 ");
-//                fflush(stdout);
-
                 fifthMark = true;
                 highTimeArray[4] = highTime;
                 highTime = 0;
-		setLowTime = true;
         }
 
         // Getting our 6th DIT or DAH
-        else if ( (gpioValue == 1) && firstMark && secondMark && thirdMark && fourthMark && \
+        else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && secondMark && thirdMark && fourthMark && \
                     fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {       
-//               printf("13 ");
-//                fflush(stdout);
-
-		if (setLowTime)
-		{
-                	lowTimeArray[4] = lowTime;
-			setLowTime = false;
-		}
+               	lowTimeArray[4] = lowTime;
                 lowTime = 0;
-                highTime++;
         }
 
       // Got our 6th mark
         else if ( (gpioValue == 0) && (highTime > 0) && firstMark && secondMark && thirdMark && fourthMark && \
                     fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {
-//               printf("14 ");
-//                fflush(stdout);
-
                 sixthMark = true;
                 highTimeArray[5] = highTime;
                 highTime = 0;
-		setLowTime = true;
         }
 
        // Getting our 7th DIT or DAH
-        else if ( (gpioValue == 1) && firstMark && secondMark && thirdMark && fourthMark && \
+        else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && secondMark && thirdMark && fourthMark && \
                     fifthMark && sixthMark && !seventhMark && !eighthMark)
         {       
-//               printf("15 ");
-//                fflush(stdout);
-
-		if (setLowTime)
-		{
-                	lowTimeArray[5] = lowTime;
-			setLowTime = false;
-		}
-
+               	lowTimeArray[5] = lowTime;
                 lowTime = 0;
-                highTime++;
         }
 
      // Got our 7th mark
         else if ( (gpioValue == 0) && (highTime > 0) && firstMark && secondMark && thirdMark && fourthMark && \
                     fifthMark && sixthMark && !seventhMark && !eighthMark)
         {
-//               printf("16 ");
-//                fflush(stdout);
-
                 seventhMark = true;
                 highTimeArray[6] = highTime;
                 highTime = 0;
-		setLowTime = true;
 
         }
 
        // Getting our 8th DIT or DAH
-        else if ( (gpioValue == 1) && firstMark && secondMark && thirdMark && fourthMark && \
+        else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && secondMark && thirdMark && fourthMark && \
                     fifthMark && sixthMark && seventhMark && !eighthMark)
         {       
-//               printf("17 ");
-//                fflush(stdout);
-		
-		if (setLowTime)
-		{
-                	lowTimeArray[6] = lowTime;
-			setLowTime = false;
-		}
+               	lowTimeArray[6] = lowTime;
                 lowTime = 0;
-                highTime++;
         }
 
      // Got our 8th mark
         else if ( (gpioValue == 0) && (highTime > 0) && firstMark && secondMark && thirdMark && fourthMark && \
                     fifthMark && sixthMark && seventhMark && !eighthMark)
         {
-//               printf("18 ");
-//                fflush(stdout);
-
                 eighthMark = true;
                 highTimeArray[7] = highTime;
                 highTime = 0;
@@ -343,19 +243,7 @@ void getSpeed(void)
 	// We should have all the data we need, lets figure out a timeUnit
         else if (eighthMark) 
         {
-//               printf("19 ");
-//                fflush(stdout);
-
-
 		i = 0;
-
-		// Find the first low time that isnt a space between chars
-//		do
-//		{
-//			printf("%d\r\n", lowTimeArray[i]);
-//			i++;
-
-//		} while (lowTimeArray[i-1] > initialTimeUnit*3);
 
 		// Find the low times that arn't a space between chars and average them
 		aveLowTime = 0;
@@ -372,7 +260,6 @@ void getSpeed(void)
 
 		aveLowTime /= (double)aveLowTimeCount;
 
-//		timeUnit = lowTimeArray[i-1];
 		timeUnit = aveLowTime;
 		printf("ave Low Time: %d	%d\r\n", aveLowTime, aveLowTimeCount);
 
@@ -387,10 +274,6 @@ void getSpeed(void)
 
                 wpm = (minute / timeUnit) / paris;
 
-//		printf("Time Unit 1: %.2f\r\n", timeUnit);
-//		printf("WPM1: %.2f\r\n", wpm);
-		
-
 		if ( (wpm - int(wpm) ) != 0)
 		{
 			if ( (wpm - int(wpm) ) > (float)0.5)
@@ -400,45 +283,17 @@ void getSpeed(void)
 
 			timeUnit = minute / (paris * wpm);
 
-//	                printf("Time Unit 2: %.2f\r\n", timeUnit);
-//        	        printf("WPM2: %.2f\r\n", wpm);
-
 			if ( (timeUnit - int(timeUnit)) != 0)
-			{
-//				printf("Calc new time unit\r\n");
-//				fflush(stdout);
-
 				timeUnit = (int)timeUnit;
-				
-//				if ( (timeUnit - int(timeUnit)) > (float)0.5)
-		//			timeUnit = ceil(timeUnit);
-//					timeUnit = (int)timeUnit;
-//				else if ( (timeUnit - int(timeUnit) ) <= (float)0.5 )
-//					timeUnit = ceil(timeUnit);
-			}
-
-			else
-			{
-
-			}
-
-//			printf("Calculated!\r\n");
-//        	        printf("Time Unit 3: %.2f\r\n", timeUnit);
-//	                printf("WPM3: %.2f\r\n", wpm);
-
 		}
 
-		else
-		{
-//			printf("Straight!\r\n");
-		}
-
-
+	
 		printf("\r\nGot Speed: %.0f WPM!\r\n", wpm);
-//		printf("time Unit 4: %f %f %f %f %f\r\n", timeUnit, lowTimeArray[0], lowTimeArray[1], lowTimeArray[2], lowTimeArray[3] );
-//                printf("%f %f %f %f\r\n",  highTimeArray[0], highTimeArray[1], highTimeArray[2], highTimeArray[3] );
-
+		usleep(5000);
+		lowTime = 0;
+		rxChar = false;
 	}
+
 }
 
 
@@ -458,7 +313,6 @@ void timerProc(void)
 
 	else
 	{
-
 		gpioValue =  readGPIO(GPIO);
 
 		if (gpioValue == 1)
