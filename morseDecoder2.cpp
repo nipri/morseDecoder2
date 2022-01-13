@@ -243,13 +243,25 @@ void getSpeed(void)
 	// We should have all the data we need, lets figure out a timeUnit
         else if (eighthMark) 
         {
-		i = 0;
+//		i = 0;
+
+//		do
+//		{
+//			i++;
+//		} while (lowTimeArray[i-1] > initialTimeUnit);
+
+
+//		timeUnit = lowTimeArray[i-1];
+
+
 
 		// Find the low times that arn't a space between chars and average them
 		aveLowTime = 0;
 		aveLowTimeCount = 0;
-		
-		for (i=0; i<=6; i++)
+
+		initialTimeUnit = lowTimeArray[0];		
+
+		for (i=1; i<=6; i++)
 		{
 			if (lowTimeArray[i] <= initialTimeUnit)
 			{
@@ -261,36 +273,37 @@ void getSpeed(void)
 		aveLowTime /= (double)aveLowTimeCount;
 
 		timeUnit = aveLowTime;
-//		printf("ave Low Time: %d	%d\r\n", aveLowTime, aveLowTimeCount);
+		printf("ave Low Time: %d	%d\r\n\r\n", aveLowTime, aveLowTimeCount);
 
-//		for (i=0; i<=6; i++)
-//			printf("%.0f\r\n", lowTimeArray[i]);
+		for (i=0; i<=6; i++)
+			printf("%.0f\r\n", lowTimeArray[i]);
+
 
 		calibrate = false;
-        }
+//        }
 
-	if (!calibrate)
-	{
+//	if (!calibrate)
+//	{
 
                 wpm = (minute / timeUnit) / paris;
 
-		if ( (wpm - int(wpm) ) != 0)
-		{
-			if ( (wpm - int(wpm) ) > (float)0.5)
-				wpm = ceil(wpm);
-			else if ( (wpm - int(wpm) ) <= 0.5)
-				wpm = floor(wpm);
+//		if ( (wpm - int(wpm) ) != 0)
+//		{
+//			if ( (wpm - int(wpm) ) > (float)0.5)
+//				wpm = ceil(wpm);
+//			else if ( (wpm - int(wpm) ) <= 0.5)
+//				wpm = floor(wpm);
 
-			timeUnit = minute / (paris * wpm);
+//			timeUnit = minute / (paris * wpm);
 
-			if ( (timeUnit - int(timeUnit)) != 0)
-				timeUnit = (int)timeUnit;
-		}
+//			if ( (timeUnit - int(timeUnit)) != 0)
+//				timeUnit = (int)timeUnit;
+//		}
 
 	
 		printf("\r\nGot Speed: %.0f WPM!\r\n", wpm);
 		usleep(5000);
-		lowTime = 0;
+//		lowTime = 0;
 		rxChar = false;
 	}
 
@@ -350,12 +363,14 @@ void timerProc(void)
 			{
 				charArray[elementIndex] = DIT;
 				elementIndex++;
+//				printf("GOT A DIT\r\n");
 			}
 
 			else if ( (highTime >= timeUnit*3) && (highTime < timeUnit*4) )
 			{
 				charArray[elementIndex] = DAH;
 				elementIndex++;
+//				printf("GOT A DAH\r\n");
 			}
 
 			else
@@ -365,13 +380,14 @@ void timerProc(void)
 			highTime = 0;
 		}
 
-		if (rxChar && (gpioValue == 0) && (lowTime > timeUnit*4)) // We received a complete character
+		if (rxChar && (gpioValue == 0) && (lowTime >= timeUnit*3)) // We received a complete character
 		{
 
+//			printf("GOT A CHAR\r\n");
 			charArray[elementIndex] = END;
 			rxChar = false;
 			elementIndex = 0;
-			lowTime = 0;
+	//		lowTime = 0;
 			highTime = 0;
 			lookUpChar();
 		}
