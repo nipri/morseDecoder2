@@ -13,7 +13,7 @@
 
 #include "morseCodeDecoder.h"
 
-#define INTERVAL	1 // mS interval to execute timerProc()
+#define INTERVAL	5 // mS interval to execute timerProc()
 #define GPIO		17
 
 struct timespec timer;
@@ -52,8 +52,9 @@ void getSpeed(void)
 {
 
 	static double highTimeArray[8], lowTimeArray[8], wpm;
-	static unsigned int highTime, lowTime, aveLowTime, aveLowTimeCount, i;
-	static unsigned int minute = 60000;
+	static unsigned int highTime, lowTime, aveLowTime, aveLowTimeCount;
+	static int i;
+	static unsigned int minute = 12000;
 	static unsigned int paris = 50; // This is the number of time units in the word "paris "
 
 	fflush(stdout);
@@ -124,7 +125,7 @@ void getSpeed(void)
 	else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && !secondMark && !thirdMark && !fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
 	{       
-		lowTimeArray[0] = lowTime;
+		lowTimeArray[0] = lowTime * 5;
 		lowTime = 0;
 	}
 
@@ -141,7 +142,7 @@ void getSpeed(void)
         else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && secondMark && !thirdMark && !fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {       
-                lowTimeArray[1] = lowTime;
+                lowTimeArray[1] = lowTime * 5;
                 lowTime = 0;
         }
 
@@ -158,7 +159,7 @@ void getSpeed(void)
         else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && secondMark && thirdMark && !fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {       
-               	lowTimeArray[2] = lowTime;
+               	lowTimeArray[2] = lowTime * 5;
                 lowTime = 0;
         }
 
@@ -175,7 +176,7 @@ void getSpeed(void)
         else if ( (gpioValue == 1) && (lowTime > 0 ) && firstMark && secondMark && thirdMark && fourthMark && \
                     !fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {       
-               	lowTimeArray[3] = lowTime;
+               	lowTimeArray[3] = lowTime * 5;
                 lowTime = 0;
         }
 
@@ -192,7 +193,7 @@ void getSpeed(void)
         else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && secondMark && thirdMark && fourthMark && \
                     fifthMark && !sixthMark && !seventhMark && !eighthMark)
         {       
-               	lowTimeArray[4] = lowTime;
+               	lowTimeArray[4] = lowTime * 5;
                 lowTime = 0;
         }
 
@@ -209,7 +210,7 @@ void getSpeed(void)
         else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && secondMark && thirdMark && fourthMark && \
                     fifthMark && sixthMark && !seventhMark && !eighthMark)
         {       
-               	lowTimeArray[5] = lowTime;
+               	lowTimeArray[5] = lowTime * 5;
                 lowTime = 0;
         }
 
@@ -227,7 +228,7 @@ void getSpeed(void)
         else if ( (gpioValue == 1) && (lowTime > 0) && firstMark && secondMark && thirdMark && fourthMark && \
                     fifthMark && sixthMark && seventhMark && !eighthMark)
         {       
-               	lowTimeArray[6] = lowTime;
+               	lowTimeArray[6] = lowTime * 5;
                 lowTime = 0;
         }
 
@@ -243,25 +244,29 @@ void getSpeed(void)
 	// We should have all the data we need, lets figure out a timeUnit
         else if (eighthMark) 
         {
-//		i = 0;
 
+
+		i = 0;
+
+		// Find the first instance of a low time that isnt a space between words or characters
+		// (The easy way)
 //		do
 //		{
 //			i++;
 //		} while (lowTimeArray[i-1] > initialTimeUnit);
 
+//		printf("Low Time: %.0f	i=%d\r\n", lowTimeArray[i-1], i);
 
 //		timeUnit = lowTimeArray[i-1];
 
 
-
 		// Find the low times that arn't a space between chars and average them
+		// (the hard way)
+
 		aveLowTime = 0;
 		aveLowTimeCount = 0;
-
-		initialTimeUnit = lowTimeArray[0];		
-
-		for (i=1; i<=6; i++)
+		
+		for (i=0; i<=6; i++)
 		{
 			if (lowTimeArray[i] <= initialTimeUnit)
 			{
@@ -273,37 +278,37 @@ void getSpeed(void)
 		aveLowTime /= (double)aveLowTimeCount;
 
 		timeUnit = aveLowTime;
-		printf("ave Low Time: %d	%d\r\n\r\n", aveLowTime, aveLowTimeCount);
+		printf("ave Low Time: %d	%d\r\n", aveLowTime, aveLowTimeCount);
 
 		for (i=0; i<=6; i++)
 			printf("%.0f\r\n", lowTimeArray[i]);
 
 
 		calibrate = false;
-//        }
+        }
 
-//	if (!calibrate)
-//	{
+	if (!calibrate)
+	{
 
                 wpm = (minute / timeUnit) / paris;
 
-//		if ( (wpm - int(wpm) ) != 0)
-//		{
-//			if ( (wpm - int(wpm) ) > (float)0.5)
-//				wpm = ceil(wpm);
-//			else if ( (wpm - int(wpm) ) <= 0.5)
-//				wpm = floor(wpm);
+		if ( (wpm - int(wpm) ) != 0)
+		{
+			if ( (wpm - int(wpm) ) > (float)0.5)
+				wpm = ceil(wpm);
+			else if ( (wpm - int(wpm) ) <= 0.5)
+				wpm = floor(wpm);
 
-//			timeUnit = minute / (paris * wpm);
+			timeUnit = minute / (paris * wpm);
 
-//			if ( (timeUnit - int(timeUnit)) != 0)
-//				timeUnit = (int)timeUnit;
-//		}
+			if ( (timeUnit - int(timeUnit)) != 0)
+				timeUnit = (int)timeUnit;
+		}
 
 	
 		printf("\r\nGot Speed: %.0f WPM!\r\n", wpm);
 		usleep(5000);
-//		lowTime = 0;
+		lowTime = 0;
 		rxChar = false;
 	}
 
@@ -340,6 +345,8 @@ void timerProc(void)
 		{
 			lowTime++;
 
+//			printf("Low Time: %lld\r\n", lowTime);
+
 			if (lowTime >= timeUnit*7) // We havent received anything yet or  
 			{			   // may just be in-between words
 				lowTime = 0;
@@ -363,31 +370,38 @@ void timerProc(void)
 			{
 				charArray[elementIndex] = DIT;
 				elementIndex++;
-//				printf("GOT A DIT\r\n");
+//				printf("GOT DIT\r\n");
+//				usleep(100);
 			}
 
 			else if ( (highTime >= timeUnit*3) && (highTime < timeUnit*4) )
 			{
 				charArray[elementIndex] = DAH;
 				elementIndex++;
-//				printf("GOT A DAH\r\n");
+//				printf("GOT DAH\r\n");
+//				usleep(100);
 			}
 
 			else
 			{
+				printf("GOT SQUAT\r\n");
 			}
 
 			highTime = 0;
+
+//                        printf("Low time1: %lld\r\n", lowTime);  
+
 		}
 
-		if (rxChar && (gpioValue == 0) && (lowTime >= timeUnit*3)) // We received a complete character
+		if (rxChar && (gpioValue == 0) && (lowTime >= timeUnit*2)) // We received a complete character
 		{
 
-//			printf("GOT A CHAR\r\n");
+//                        printf("Low time2: %lld\r\n", lowTime);  
+
 			charArray[elementIndex] = END;
 			rxChar = false;
 			elementIndex = 0;
-	//		lowTime = 0;
+		//	lowTime = 0;
 			highTime = 0;
 			lookUpChar();
 		}
@@ -436,14 +450,13 @@ unsigned int readGPIO(unsigned int whichOne)
 
 void lookUpChar(void)
 {
-	bool match, foundChar, error;
+	bool match, foundChar;
         int i, j;
         
 
 	i = 0;
 	match = 0;
 	foundChar = 0;
-	error = false;
 
         do
         {
@@ -465,17 +478,9 @@ void lookUpChar(void)
 
 		i++;
 
-		if (i >= 37)
-			error = true;
+          } while (!foundChar);
 
-          } while ( (!foundChar) && (error == false) );
-
-
-	if (error)
-		printf("*");
-	else
-        	printf("%c", morseCodeTable[i-1][j]);
-
+        printf("%c", morseCodeTable[i-1][j]);
 	fflush(stdout);
 }
 

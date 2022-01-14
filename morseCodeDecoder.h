@@ -5,7 +5,7 @@
 #define DAH	0xda
 #define END	0xa5
 
-unsigned int morseCodeTable[26][8] = 
+unsigned int morseCodeTable[37][8] = 
 		{
 		{DIT, DAH, END, 'a'},
 		{DAH, DIT, DIT, DIT, END, 'b'},
@@ -32,12 +32,18 @@ unsigned int morseCodeTable[26][8] =
 		{DIT, DAH, DAH, END, 'w'},
 		{DAH, DIT, DIT, DAH, END, 'x'},
 		{DAH, DIT, DAH, DAH, END, 'y'},
-		{DAH, DAH, DIT, DIT, END, 'z'}
+		{DAH, DAH, DIT, DIT, END, 'z'},
+		{DIT, DAH, DAH, DAH, DAH, END, '1'},
+                {DIT, DIT, DAH, DAH, DAH, END, '2'},
+                {DIT, DIT, DIT, DAH, DAH, END, '3'},
+                {DIT, DIT, DIT, DIT, DAH, END, '4'},
+                {DIT, DIT, DIT, DIT, DIT, END, '5'},
+                {DAH, DIT, DIT, DIT, DIT, END, '6'},
+                {DAH, DAH, DIT, DIT, DIT, END, '7'},
+                {DAH, DAH, DAH, DIT, DIT, END, '8'},
+                {DAH, DAH, DAH, DIT, DIT, END, '8'},
+                {DAH, DAH, DAH, DAH, DIT, END, '9'},
+                {DAH, DAH, DAH, DAH, DAH, END, '0'}
 		};
 		
-		 
-
-
-
-
 #endif 
